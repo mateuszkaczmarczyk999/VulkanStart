@@ -1,0 +1,29 @@
+{
+    "configurations": [
+        {
+            "name": "Vulkan",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/opt/VulkanSDK/1.4.304.1/macOS/include", 
+                "/opt/homebrew/opt/glfw/include",
+                "/opt/homebrew/opt/glm/include"
+            ],
+            "defines": [
+                "VULKAN_HPP_NO_EXCEPTIONS"
+            ],
+            "compilerPath": "/usr/bin/g++",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "clang-x64",
+            "browse": {
+                "path": [
+                    "/opt/VulkanSDK/1.4.304.1/macOS/include", 
+                    "/opt/homebrew/opt/glfw/include",
+                    "/opt/homebrew/opt/glm/include"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            }
+        }
+    ],
+    "version": 4
+}
