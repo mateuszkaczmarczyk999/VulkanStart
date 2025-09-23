@@ -16,7 +16,7 @@ LINKER_PATHS = -L$(VULKAN_SDK)/lib -L$(GLFW_PATH)/lib
 LINKER_FLAGS = -lvulkan -lglfw
 
 # Source files
-SOURCE = main.cpp
+SOURCE = main.cpp VulkanRenderer.cpp
 TARGET = vulkan_app
 
 ###########################################################
