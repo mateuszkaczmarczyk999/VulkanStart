@@ -35,10 +35,13 @@ private:
     void createInstance();
     void setupDebugMessenger();
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo);
+    void pickPhysicalDevice();
+    bool isDeviceSuitable(VkPhysicalDevice device);
 
     GLFWwindow *window;
-    VkInstance instance;
-    VkDebugUtilsMessengerEXT debugMessenger;
+    VkInstance instance = VK_NULL_HANDLE;
+    VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
+    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 };
 
 #endif // VULKANRENDERER_HPP

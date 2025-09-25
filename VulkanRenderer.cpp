@@ -52,6 +52,7 @@ void VulkanRenderer::initialize()
     createWindow();
     createInstance();
     setupDebugMessenger();
+    pickPhysicalDevice();
 }
 
 void VulkanRenderer::run()
@@ -195,7 +196,7 @@ void VulkanRenderer::createInstance()
         instanceInfo.ppEnabledLayerNames = validationLayers.data();
 
         populateDebugMessengerCreateInfo(messengerCreateInfo);
-        instanceInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT *) &messengerCreateInfo;
+        instanceInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT *)&messengerCreateInfo;
     }
     else
     {
@@ -240,4 +241,43 @@ void VulkanRenderer::setupDebugMessenger()
     {
         throw std::runtime_error("Failed to create debug messenger!");
     }
+}
+
+void VulkanRenderer::pickPhysicalDevice()
+{
+    uint32_t deviceCount = 0;
+    vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+
+    std::vector<VkPhysicalDevice> devices(deviceCount);
+    vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
+
+    if (deviceCount == 0)
+    {
+        throw std::runtime_error("Failed to find GPUs with Vulkan support!");
+    }
+
+    for (const auto &device : devices)
+    {
+        if (isDeviceSuitable(device))
+        {
+            physicalDevice = device;
+            break;
+        }
+    }
+
+    if (physicalDevice == VK_NULL_HANDLE)
+    {
+        throw std::runtime_error("Failed to find suitable GPU!");
+    }
+}
+
+bool VulkanRenderer::isDeviceSuitable(VkPhysicalDevice device)
+{
+    VkPhysicalDeviceProperties deviceProperties;
+    vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+    VkPhysicalDeviceFeatures deviceFatures;
+    vkGetPhysicalDeviceFeatures(device, &deviceFatures);
+
+    return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU && deviceFatures.shaderInt64;
 }
