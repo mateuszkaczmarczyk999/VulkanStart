@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <vector>
 #include <iostream>
+#include <optional>
 
 const uint32_t WINDOW_WIDTH = 800;
 const uint32_t WINDOW_HEIGHT = 600;
@@ -18,6 +19,17 @@ const uint32_t WINDOW_HEIGHT = 600;
 #else
     const bool enableValidationLayers = true;
 #endif
+
+struct QueueFamilyIndices
+{
+    std::optional<uint32_t> graphicsFamily;
+
+    bool isReady()
+    {
+        return graphicsFamily.has_value();
+    }
+};
+
 
 class VulkanRenderer
 {
@@ -37,7 +49,8 @@ private:
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo);
     void pickPhysicalDevice();
     bool isDeviceSuitable(VkPhysicalDevice device);
-
+    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+    
     GLFWwindow *window;
     VkInstance instance = VK_NULL_HANDLE;
     VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;

@@ -279,5 +279,32 @@ bool VulkanRenderer::isDeviceSuitable(VkPhysicalDevice device)
     VkPhysicalDeviceFeatures deviceFatures;
     vkGetPhysicalDeviceFeatures(device, &deviceFatures);
 
-    return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU && deviceFatures.shaderInt64;
+    QueueFamilyIndices queueIndices = findQueueFamilies(device);
+
+    return 
+        deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU &&
+        deviceFatures.shaderInt64 &&
+        queueIndices.isReady();
+}
+
+QueueFamilyIndices VulkanRenderer::findQueueFamilies(VkPhysicalDevice device)
+{
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilyProperties.data());
+
+    QueueFamilyIndices queueIndices;
+    int queueIdx = 0;
+    for (const auto &properties : queueFamilyProperties)
+    {
+        if (properties.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+        {
+            queueIndices.graphicsFamily = queueIdx;
+        }
+        queueIdx++;
+    }
+
+    return queueIndices;
 }
