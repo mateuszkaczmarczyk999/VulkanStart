@@ -13,6 +13,12 @@
 const uint32_t WINDOW_WIDTH = 800;
 const uint32_t WINDOW_HEIGHT = 600;
 
+#ifdef NDEBUG
+    const bool enableValidationLayers = false;
+#else
+    const bool enableValidationLayers = true;
+#endif
+
 class VulkanRenderer
 {
 public:
@@ -27,9 +33,12 @@ private:
     bool checkInstanceExtensionSupport(std::vector<const char *> *extensionsToCheck);
     void createWindow();
     void createInstance();
+    void setupDebugMessenger();
+    void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo);
 
     GLFWwindow *window;
     VkInstance instance;
+    VkDebugUtilsMessengerEXT debugMessenger;
 };
 
 #endif // VULKANRENDERER_HPP
