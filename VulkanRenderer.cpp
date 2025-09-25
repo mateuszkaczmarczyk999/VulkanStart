@@ -53,6 +53,7 @@ void VulkanRenderer::initialize()
     createInstance();
     setupDebugMessenger();
     pickPhysicalDevice();
+    createLogicalDevice();
 }
 
 void VulkanRenderer::run()
@@ -65,6 +66,7 @@ void VulkanRenderer::run()
 
 void VulkanRenderer::flush()
 {
+    vkDestroyDevice(logicalDevice, nullptr);
     if (enableValidationLayers)
     {
         DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
@@ -281,10 +283,9 @@ bool VulkanRenderer::isDeviceSuitable(VkPhysicalDevice device)
 
     QueueFamilyIndices queueIndices = findQueueFamilies(device);
 
-    return 
-        deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU &&
-        deviceFatures.shaderInt64 &&
-        queueIndices.isReady();
+    return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU &&
+           deviceFatures.shaderInt64 &&
+           queueIndices.isReady();
 }
 
 QueueFamilyIndices VulkanRenderer::findQueueFamilies(VkPhysicalDevice device)
@@ -307,4 +308,44 @@ QueueFamilyIndices VulkanRenderer::findQueueFamilies(VkPhysicalDevice device)
     }
 
     return queueIndices;
+}
+
+void VulkanRenderer::createLogicalDevice()
+{
+    QueueFamilyIndices queueIndices = findQueueFamilies(physicalDevice);
+
+    VkDeviceQueueCreateInfo queueCreateInfo{};
+    queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queueCreateInfo.queueFamilyIndex = queueIndices.graphicsFamily.value();
+    queueCreateInfo.queueCount = 1;
+    float priority = 1.0f;
+    queueCreateInfo.pQueuePriorities = &priority;
+
+    VkPhysicalDeviceFeatures deviceFeatures{};
+    deviceFeatures.shaderInt64 = VK_TRUE;
+
+    VkDeviceCreateInfo deviceCreateInfo{};
+    deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    deviceCreateInfo.pQueueCreateInfos = &queueCreateInfo;
+    deviceCreateInfo.queueCreateInfoCount = 1;
+    deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
+    deviceCreateInfo.enabledExtensionCount = 0;
+
+    // if (enableValidationLayers)
+    // {
+    //     deviceCreateInfo.enabledLayerCount = (uint32_t)(validationLayers.size());
+    //     deviceCreateInfo.ppEnabledLayerNames = validationLayers.data();
+    // }
+    // else
+    // {
+    //     deviceCreateInfo.enabledLayerCount = 0;
+    // }
+
+    VkResult result = vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &logicalDevice);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create logical device!");
+    }
+
+    vkGetDeviceQueue(logicalDevice, queueIndices.graphicsFamily.value(), 0, &graphicsQueue);
 }
