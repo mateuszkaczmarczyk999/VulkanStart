@@ -8,6 +8,7 @@
 #include <GLFW/glfw3.h>
 #include <stdexcept>
 #include <vector>
+#include <iostream>
 
 const uint32_t WINDOW_WIDTH = 800;
 const uint32_t WINDOW_HEIGHT = 600;
@@ -22,6 +23,7 @@ public:
     void flush();
 
 private:
+    bool checkValidationLayerSupport(std::vector<const char *> *validationLayersToCheck);
     bool checkInstanceExtensionSupport(std::vector<const char *> *extensionsToCheck);
     void createWindow();
     void createInstance();

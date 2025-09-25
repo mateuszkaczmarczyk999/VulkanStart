@@ -29,6 +29,37 @@ void VulkanRenderer::flush()
     glfwTerminate();
 }
 
+bool VulkanRenderer::checkValidationLayerSupport(std::vector<const char *> *validationLayersToCheck)
+{
+    // Get number of supported validation layers
+    uint32_t supportedValidationLayerCount = 0;
+    vkEnumerateInstanceLayerProperties(&supportedValidationLayerCount, nullptr);
+
+    // Get supported validation layers
+    std::vector<VkLayerProperties> supportedValidationLayers(supportedValidationLayerCount);
+    vkEnumerateInstanceLayerProperties(&supportedValidationLayerCount, supportedValidationLayers.data());
+
+    // Check if layers are supported
+    for (const auto &layerName : *validationLayersToCheck)
+    {
+        bool layerFound = false;
+        for (const auto &supported : supportedValidationLayers)
+        {
+            if (std::strcmp(layerName, supported.layerName) == 0)
+            {
+                layerFound = true;
+                break;
+            }
+        }
+        if (!layerFound)
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 bool VulkanRenderer::checkInstanceExtensionSupport(std::vector<const char *> *extensionsToCheck)
 {
     // Get number of supported extensions
@@ -70,6 +101,19 @@ void VulkanRenderer::createWindow()
 
 void VulkanRenderer::createInstance()
 {
+    // Preparing validation layers
+    std::vector<const char *> validationLayers = {"VK_LAYER_KHRONOS_validation"};
+#ifdef NDEBUG
+    const bool enableValidationLayers = false;
+#else
+    std::cout << "[DEBUG MODE]" << std::endl;
+    const bool enableValidationLayers = true;
+#endif
+    if (enableValidationLayers && !checkValidationLayerSupport(&validationLayers))
+    {
+        throw std::runtime_error("Not all validation layers are supported!");
+    }
+
     // Application info structure
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -98,10 +142,18 @@ void VulkanRenderer::createInstance()
     VkInstanceCreateInfo instanceInfo{};
     instanceInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     instanceInfo.pApplicationInfo = &appInfo;
-    instanceInfo.enabledExtensionCount = (uint32_t) requiredExtensions.size();
+    instanceInfo.enabledExtensionCount = (uint32_t)requiredExtensions.size();
     instanceInfo.ppEnabledExtensionNames = requiredExtensions.data();
-    instanceInfo.enabledLayerCount = 0;
     instanceInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+    if (enableValidationLayers)
+    {
+        instanceInfo.enabledLayerCount = (uint32_t)validationLayers.size();
+        instanceInfo.ppEnabledLayerNames = validationLayers.data();
+    }
+    else
+    {
+        instanceInfo.enabledLayerCount = 0;
+    }
 
     // Create Vulkan instance
     VkResult result = vkCreateInstance(&instanceInfo, nullptr, &instance);
