@@ -11,6 +11,7 @@
 #include <vector>
 #include <iostream>
 #include <optional>
+#include <set>
 
 const uint32_t WINDOW_WIDTH = 800;
 const uint32_t WINDOW_HEIGHT = 600;
@@ -24,10 +25,11 @@ const uint32_t WINDOW_HEIGHT = 600;
 struct QueueFamilyIndices
 {
     std::optional<uint32_t> graphicsFamily;
+    std::optional<uint32_t> presentationFamily;
 
     bool isReady()
     {
-        return graphicsFamily.has_value();
+        return graphicsFamily.has_value() && presentationFamily.has_value();
     }
 };
 
@@ -61,6 +63,7 @@ private:
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice logicalDevice;
     VkQueue graphicsQueue;
+    VkQueue presentationQueue;
 };
 
 #endif // VULKANRENDERER_HPP
