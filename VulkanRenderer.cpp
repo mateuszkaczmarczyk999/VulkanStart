@@ -71,6 +71,7 @@ void VulkanRenderer::flush()
     {
         DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
     }
+    vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyInstance(instance, nullptr);
     glfwDestroyWindow(window);
     glfwTerminate();
@@ -242,6 +243,15 @@ void VulkanRenderer::setupDebugMessenger()
     if (result != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create debug messenger!");
+    }
+}
+
+void VulkanRenderer::createSurface()
+{
+    VkResult result = glfwCreateWindowSurface(instance, window, nullptr, &surface);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create surface window!");
     }
 }
 
