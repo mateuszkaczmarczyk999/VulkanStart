@@ -17,9 +17,9 @@ const uint32_t WINDOW_WIDTH = 800;
 const uint32_t WINDOW_HEIGHT = 600;
 
 #ifdef NDEBUG
-    const bool enableValidationLayers = false;
+const bool enableValidationLayers = false;
 #else
-    const bool enableValidationLayers = true;
+const bool enableValidationLayers = true;
 #endif
 
 struct QueueFamilyIndices
@@ -32,7 +32,6 @@ struct QueueFamilyIndices
         return graphicsFamily.has_value() && presentationFamily.has_value();
     }
 };
-
 
 class VulkanRenderer
 {
@@ -51,11 +50,12 @@ private:
     void setupDebugMessenger();
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo);
     void createSurface();
-    bool isDeviceSuitable(VkPhysicalDevice device);
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+    bool checkDeviceExtensionSupport(VkPhysicalDevice device, std::vector<const char *> *extensionsToCheck);
+    bool isDeviceSuitable(VkPhysicalDevice device);
     void pickPhysicalDevice();
     void createLogicalDevice();
-    
+
     GLFWwindow *window;
     VkInstance instance = VK_NULL_HANDLE;
     VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;

@@ -294,9 +294,43 @@ bool VulkanRenderer::isDeviceSuitable(VkPhysicalDevice device)
 
     QueueFamilyIndices queueIndices = findQueueFamilies(device);
 
+    std::vector<const char *> deviceExtensions = {
+        "VK_KHR_portability_subset",
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    };
+
+    bool extensionsSupported = checkDeviceExtensionSupport(device, &deviceExtensions);
+
     return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU &&
            deviceFatures.shaderInt64 &&
-           queueIndices.isReady();
+           queueIndices.isReady() &&
+           extensionsSupported;
+}
+
+bool VulkanRenderer::checkDeviceExtensionSupport(VkPhysicalDevice device, std::vector<const char *> *extensionsToCheck)
+{
+    uint32_t extensionsCount = 0;
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionsCount, nullptr);
+
+    std::vector<VkExtensionProperties> supportedExtensions(extensionsCount);
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionsCount, supportedExtensions.data());
+
+    for (const auto &extensionName : *extensionsToCheck)
+    {
+        bool extensionFound = false;
+        for (const auto &supported : supportedExtensions)
+        {
+            if (std::strcmp(extensionName, supported.extensionName) == 0)
+            {
+                extensionFound = true;
+                break;
+            }
+        }
+        if (!extensionFound)
+        {
+            return false;
+        }
+    }
 }
 
 QueueFamilyIndices VulkanRenderer::findQueueFamilies(VkPhysicalDevice device)
@@ -335,6 +369,7 @@ void VulkanRenderer::createLogicalDevice()
 {
     std::vector<const char *> deviceExtensions = {
         "VK_KHR_portability_subset",
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };
 
     QueueFamilyIndices queueIndices = findQueueFamilies(physicalDevice);
