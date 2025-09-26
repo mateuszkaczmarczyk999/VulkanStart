@@ -301,10 +301,43 @@ bool VulkanRenderer::isDeviceSuitable(VkPhysicalDevice device)
 
     bool extensionsSupported = checkDeviceExtensionSupport(device, &deviceExtensions);
 
+    bool swapchainAdequate = false;
+    if (extensionsSupported)
+    {
+        SwapchainSupportDetails swapchainSupport = querySwapchainSupport(device);
+        swapchainAdequate = !swapchainSupport.surfaceFormats.empty() && !swapchainSupport.surfacePresentModes.empty();
+    }
+
     return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU &&
            deviceFatures.shaderInt64 &&
            queueIndices.isReady() &&
-           extensionsSupported;
+           extensionsSupported &&
+           swapchainAdequate;
+}
+
+SwapchainSupportDetails VulkanRenderer::querySwapchainSupport(VkPhysicalDevice device)
+{
+    SwapchainSupportDetails details;
+
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.surfaceCapabilities);
+
+    uint32_t formatCount = 0;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+    if (formatCount != 0)
+    {
+        details.surfaceFormats.resize(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.surfaceFormats.data());
+    }
+
+    uint32_t presentModeCount = 0;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
+    if (presentModeCount != 0)
+    {
+        details.surfacePresentModes.resize(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.surfacePresentModes.data());
+    }
+
+    return details;
 }
 
 bool VulkanRenderer::checkDeviceExtensionSupport(VkPhysicalDevice device, std::vector<const char *> *extensionsToCheck)
@@ -331,6 +364,7 @@ bool VulkanRenderer::checkDeviceExtensionSupport(VkPhysicalDevice device, std::v
             return false;
         }
     }
+    return true;
 }
 
 QueueFamilyIndices VulkanRenderer::findQueueFamilies(VkPhysicalDevice device)
@@ -369,8 +403,7 @@ void VulkanRenderer::createLogicalDevice()
 {
     std::vector<const char *> deviceExtensions = {
         "VK_KHR_portability_subset",
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME
-    };
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
     QueueFamilyIndices queueIndices = findQueueFamilies(physicalDevice);
 

@@ -33,6 +33,13 @@ struct QueueFamilyIndices
     }
 };
 
+struct SwapchainSupportDetails
+{
+    VkSurfaceCapabilitiesKHR surfaceCapabilities;
+    std::vector<VkSurfaceFormatKHR> surfaceFormats;
+    std::vector<VkPresentModeKHR> surfacePresentModes;
+};
+
 class VulkanRenderer
 {
 public:
@@ -52,6 +59,7 @@ private:
     void createSurface();
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
     bool checkDeviceExtensionSupport(VkPhysicalDevice device, std::vector<const char *> *extensionsToCheck);
+    SwapchainSupportDetails querySwapchainSupport(VkPhysicalDevice device);
     bool isDeviceSuitable(VkPhysicalDevice device);
     void pickPhysicalDevice();
     void createLogicalDevice();
