@@ -70,6 +70,7 @@ private:
     VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
     void createSwapchain();
+    void createImageViews();
 
     GLFWwindow *window;
     VkInstance instance = VK_NULL_HANDLE;
@@ -80,9 +81,10 @@ private:
     VkQueue graphicsQueue;
     VkQueue presentationQueue;
     VkSwapchainKHR swapchain;
-    std::vector<VkImage> swapchainImages;
     VkFormat swapchainFormat;
     VkExtent2D swapchainExtent;
+    std::vector<VkImage> swapchainImages;
+    std::vector<VkImageView> swapchainImageViews;
 };
 
 #endif // VULKANRENDERER_HPP
