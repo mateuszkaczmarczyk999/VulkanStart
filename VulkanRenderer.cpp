@@ -52,6 +52,7 @@ void VulkanRenderer::initialize()
     createWindow();
     createInstance();
     setupDebugMessenger();
+    createSurface();
     pickPhysicalDevice();
     createLogicalDevice();
 }
@@ -332,6 +333,10 @@ QueueFamilyIndices VulkanRenderer::findQueueFamilies(VkPhysicalDevice device)
 
 void VulkanRenderer::createLogicalDevice()
 {
+    std::vector<const char *> deviceExtensions = {
+        "VK_KHR_portability_subset",
+    };
+
     QueueFamilyIndices queueIndices = findQueueFamilies(physicalDevice);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
@@ -359,7 +364,8 @@ void VulkanRenderer::createLogicalDevice()
     deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
     deviceCreateInfo.queueCreateInfoCount = (uint32_t)queueCreateInfos.size();
     deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
-    deviceCreateInfo.enabledExtensionCount = 0;
+    deviceCreateInfo.enabledExtensionCount = (uint32_t)deviceExtensions.size();
+    deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
     // if (enableValidationLayers)
     // {

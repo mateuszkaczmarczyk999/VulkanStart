@@ -44,16 +44,16 @@ public:
     void flush();
 
 private:
+    void createWindow();
     bool checkValidationLayerSupport(std::vector<const char *> *validationLayersToCheck);
     bool checkInstanceExtensionSupport(std::vector<const char *> *extensionsToCheck);
-    void createWindow();
     void createInstance();
     void setupDebugMessenger();
     void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo);
     void createSurface();
-    void pickPhysicalDevice();
     bool isDeviceSuitable(VkPhysicalDevice device);
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+    void pickPhysicalDevice();
     void createLogicalDevice();
     
     GLFWwindow *window;
