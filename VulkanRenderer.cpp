@@ -55,6 +55,7 @@ void VulkanRenderer::initialize()
     createSurface();
     pickPhysicalDevice();
     createLogicalDevice();
+    createSwapchain();
 }
 
 void VulkanRenderer::run()
@@ -67,6 +68,7 @@ void VulkanRenderer::run()
 
 void VulkanRenderer::flush()
 {
+    vkDestroySwapchainKHR(logicalDevice, swapchain, nullptr);
     vkDestroyDevice(logicalDevice, nullptr);
     if (enableValidationLayers)
     {
@@ -296,8 +298,7 @@ bool VulkanRenderer::isDeviceSuitable(VkPhysicalDevice device)
 
     std::vector<const char *> deviceExtensions = {
         "VK_KHR_portability_subset",
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME
-    };
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
     bool extensionsSupported = checkDeviceExtensionSupport(device, &deviceExtensions);
 
@@ -453,4 +454,111 @@ void VulkanRenderer::createLogicalDevice()
 
     vkGetDeviceQueue(logicalDevice, queueIndices.graphicsFamily.value(), 0, &graphicsQueue);
     vkGetDeviceQueue(logicalDevice, queueIndices.presentationFamily.value(), 0, &presentationQueue);
+}
+
+VkSurfaceFormatKHR VulkanRenderer::chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats)
+{
+    for (const auto &available : availableFormats)
+    {
+        if (available.format == VK_FORMAT_B8G8R8A8_SRGB && available.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+        {
+            return available;
+        }
+    }
+    return availableFormats[0];
+}
+
+VkPresentModeKHR VulkanRenderer::choosePresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes)
+{
+    for (const auto &available : availablePresentModes)
+    {
+        if (available == VK_PRESENT_MODE_MAILBOX_KHR)
+        {
+            return available;
+        }
+    }
+    return VK_PRESENT_MODE_FIFO_KHR;
+}
+
+VkExtent2D VulkanRenderer::chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities)
+{
+    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
+    {
+        return capabilities.currentExtent;
+    }
+    else
+    {
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
+
+        VkExtent2D actualExtent = {
+            static_cast<uint32_t>(width),
+            static_cast<uint32_t>(height),
+        };
+
+        actualExtent.width = std::clamp(
+            actualExtent.width,
+            capabilities.minImageExtent.width,
+            capabilities.maxImageExtent.width);
+
+        actualExtent.height = std::clamp(
+            actualExtent.height,
+            capabilities.minImageExtent.height,
+            capabilities.maxImageExtent.height);
+
+        return actualExtent;
+    }
+}
+
+void VulkanRenderer::createSwapchain()
+{
+    SwapchainSupportDetails swapchainSupport = querySwapchainSupport(physicalDevice);
+
+    VkSurfaceFormatKHR surfaceFormat = chooseSurfaceFormat(swapchainSupport.surfaceFormats);
+    VkPresentModeKHR presentMode = choosePresentMode(swapchainSupport.surfacePresentModes);
+    VkExtent2D swapExtent = chooseSwapExtent(swapchainSupport.surfaceCapabilities);
+
+    uint32_t imageCount = swapchainSupport.surfaceCapabilities.minImageCount + 1;
+    if (swapchainSupport.surfaceCapabilities.maxImageCount > 0 && imageCount > swapchainSupport.surfaceCapabilities.maxImageCount)
+    {
+        imageCount = swapchainSupport.surfaceCapabilities.maxImageCount;
+    }
+
+    VkSwapchainCreateInfoKHR createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    createInfo.surface = surface;
+    createInfo.minImageCount = imageCount;
+    createInfo.imageFormat = surfaceFormat.format;
+    createInfo.imageColorSpace = surfaceFormat.colorSpace;
+    createInfo.imageExtent = swapExtent;
+    createInfo.imageArrayLayers = 1;
+    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+    QueueFamilyIndices queueIndices = findQueueFamilies(physicalDevice);
+    uint32_t queueFamilyIndices[] = {queueIndices.graphicsFamily.value(), queueIndices.presentationFamily.value()};
+
+    if (queueIndices.graphicsFamily != queueIndices.presentationFamily)
+    {
+        createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+        createInfo.queueFamilyIndexCount = 2;
+        createInfo.pQueueFamilyIndices = queueFamilyIndices;
+    }
+    else
+    {
+        createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        createInfo.queueFamilyIndexCount = 0;
+        createInfo.pQueueFamilyIndices = nullptr;
+    }
+
+    createInfo.preTransform = swapchainSupport.surfaceCapabilities.currentTransform;
+    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    createInfo.presentMode = presentMode;
+    createInfo.clipped = VK_TRUE;
+    createInfo.oldSwapchain = VK_NULL_HANDLE;
+
+    VkResult result = vkCreateSwapchainKHR(logicalDevice, &createInfo, nullptr, &swapchain);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to create swap chain!");
+    }
 }

@@ -12,6 +12,9 @@
 #include <iostream>
 #include <optional>
 #include <set>
+#include <cstdint>
+#include <limits>
+#include <algorithm>
 
 const uint32_t WINDOW_WIDTH = 800;
 const uint32_t WINDOW_HEIGHT = 600;
@@ -63,6 +66,10 @@ private:
     bool isDeviceSuitable(VkPhysicalDevice device);
     void pickPhysicalDevice();
     void createLogicalDevice();
+    VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+    VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+    VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+    void createSwapchain();
 
     GLFWwindow *window;
     VkInstance instance = VK_NULL_HANDLE;
@@ -72,6 +79,7 @@ private:
     VkDevice logicalDevice;
     VkQueue graphicsQueue;
     VkQueue presentationQueue;
+    VkSwapchainKHR swapchain;
 };
 
 #endif // VULKANRENDERER_HPP
