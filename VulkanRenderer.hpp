@@ -80,6 +80,9 @@ private:
     VkQueue graphicsQueue;
     VkQueue presentationQueue;
     VkSwapchainKHR swapchain;
+    std::vector<VkImage> swapchainImages;
+    VkFormat swapchainFormat;
+    VkExtent2D swapchainExtent;
 };
 
 #endif // VULKANRENDERER_HPP
