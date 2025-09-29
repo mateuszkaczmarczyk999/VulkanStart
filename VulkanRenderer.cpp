@@ -1,5 +1,25 @@
 #include "VulkanRenderer.hpp"
 
+static std::vector<char> readFile(const std::string &fileName)
+{
+    std::ifstream file(fileName, std::ios::ate | std::ios::binary);
+
+    if (!file.is_open())
+    {
+        throw std::runtime_error("Failed to open file: " + fileName +
+                                 "\n  cwd: " + std::filesystem::current_path().string());
+    }
+
+    size_t fileSize = (size_t)file.tellg();
+    std::vector<char> buffer(fileSize);
+
+    file.seekg(0);
+    file.read(buffer.data(), fileSize);
+    file.close();
+
+    return buffer;
+}
+
 static VkResult CreateDebugUtilsMessengerEXT(
     VkInstance instance,
     const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
@@ -57,6 +77,7 @@ void VulkanRenderer::initialize()
     createLogicalDevice();
     createSwapchain();
     createImageViews();
+    createGraphicsPipeline();
 }
 
 void VulkanRenderer::run()
@@ -602,4 +623,43 @@ void VulkanRenderer::createImageViews()
             throw std::runtime_error("failed to create image views!");
         }
     }
+}
+
+void VulkanRenderer::createGraphicsPipeline()
+{
+    auto vertexShader = readFile("Development/cpp/VulkanStart/shaders/vert.spv");
+    VkShaderModule vertexShaderModule = createShaderModule(vertexShader);
+    VkPipelineShaderStageCreateInfo vertexShaderStageInfo{};
+    vertexShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    vertexShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    vertexShaderStageInfo.module = vertexShaderModule;
+    vertexShaderStageInfo.pName = "main";
+    vertexShaderStageInfo.pSpecializationInfo = nullptr;
+
+    auto fragmentShader = readFile("Development/cpp/VulkanStart/shaders/frag.spv");
+    VkShaderModule fragmentShaderModule = createShaderModule(fragmentShader);
+    VkPipelineShaderStageCreateInfo fragmentShaderStageInfo{};
+    vertexShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    vertexShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    vertexShaderStageInfo.module = fragmentShaderModule;
+    vertexShaderStageInfo.pName = "main";
+    vertexShaderStageInfo.pSpecializationInfo = nullptr;
+
+    VkPipelineShaderStageCreateInfo shaderStages[] = {vertexShaderStageInfo, fragmentShaderStageInfo};
+}
+
+VkShaderModule VulkanRenderer::createShaderModule(const std::vector<char> &code)
+{
+    VkShaderModuleCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    createInfo.codeSize = code.size();
+    createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
+
+    VkShaderModule shaderModule;
+    VkResult result = vkCreateShaderModule(logicalDevice, &createInfo, nullptr, &shaderModule);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create shader module!");
+    }
+    return shaderModule;
 }
