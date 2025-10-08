@@ -74,6 +74,7 @@ private:
     void createImageViews();
     void createGraphicsPipeline();
     VkShaderModule createShaderModule(const std::vector<char>& code);
+    void createRenderPass();
 
     GLFWwindow *window;
     VkInstance instance = VK_NULL_HANDLE;
@@ -88,6 +89,9 @@ private:
     VkExtent2D swapchainExtent;
     std::vector<VkImage> swapchainImages;
     std::vector<VkImageView> swapchainImageViews;
+    VkRenderPass renderPass;
+    VkPipelineLayout pipelineLayout;
+    VkPipeline graphicsPipeline;
 };
 
 #endif // VULKANRENDERER_HPP
