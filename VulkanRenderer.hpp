@@ -75,6 +75,7 @@ private:
     void createGraphicsPipeline();
     VkShaderModule createShaderModule(const std::vector<char>& code);
     void createRenderPass();
+    void createFramebuffers();
 
     GLFWwindow *window;
     VkInstance instance = VK_NULL_HANDLE;
@@ -92,6 +93,7 @@ private:
     VkRenderPass renderPass;
     VkPipelineLayout pipelineLayout;
     VkPipeline graphicsPipeline;
+    std::vector<VkFramebuffer> swapchainFramebuffers;
 };
 
 #endif // VULKANRENDERER_HPP
