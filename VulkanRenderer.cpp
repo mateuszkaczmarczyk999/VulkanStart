@@ -100,7 +100,7 @@ void VulkanRenderer::drawFrame()
     vkResetFences(logicalDevice, 1, &inFlightFence);
 
     uint32_t imageIdx;
-    vkAcquireNextImageKHR(logicalDevice, swapchain, UINT64_MAX, imageAvailableSemaphore, inFlightFence, &imageIdx);
+    vkAcquireNextImageKHR(logicalDevice, swapchain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIdx);
 
     vkResetCommandBuffer(commandBuffer, 0);
 
