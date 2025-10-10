@@ -87,11 +87,40 @@ void VulkanRenderer::run()
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
+        drawFrame();
+    }
+}
+
+void VulkanRenderer::drawFrame()
+{
+
+}
+
+void VulkanRenderer::createSyncObjects()
+{
+    VkSemaphoreCreateInfo semaphoreInfo{};
+    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    VkFenceCreateInfo fenceInfo{};
+    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+
+    VkResult imageAvailableSemaphoreResult = vkCreateSemaphore(logicalDevice, &semaphoreInfo, nullptr, &imageAvailableSemaphore);
+    VkResult renderFinishedSemaphoreResult = vkCreateSemaphore(logicalDevice, &semaphoreInfo, nullptr, &renderFinishedSemaphore);
+    VkResult fenceResult = vkCreateFence(logicalDevice, &fenceInfo, nullptr, &inFlightFence);
+    bool syncObjectsAreInvalid = imageAvailableSemaphoreResult != VK_SUCCESS
+        || renderFinishedSemaphoreResult != VK_SUCCESS || fenceResult != VK_SUCCESS;
+
+    if (syncObjectsAreInvalid)
+    {
+        throw std::runtime_error("failed to create semaphores and fences!");
     }
 }
 
 void VulkanRenderer::flush()
 {
+    vkDestroySemaphore(logicalDevice, imageAvailableSemaphore, nullptr);
+    vkDestroySemaphore(logicalDevice, renderFinishedSemaphore, nullptr);
+    vkDestroyFence(logicalDevice, inFlightFence, nullptr);
     vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
     for (auto framebuffer : swapchainFramebuffers)
     {

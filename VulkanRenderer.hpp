@@ -79,6 +79,8 @@ private:
     void createCommandPool();
     void createCommandBuffer();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIdx);
+    void drawFrame();
+    void createSyncObjects();
 
     GLFWwindow *window;
     VkInstance instance = VK_NULL_HANDLE;
@@ -99,6 +101,9 @@ private:
     std::vector<VkFramebuffer> swapchainFramebuffers;
     VkCommandPool commandPool;
     VkCommandBuffer commandBuffer;
+    VkSemaphore imageAvailableSemaphore;
+    VkSemaphore renderFinishedSemaphore;
+    VkFence inFlightFence;
 };
 
 #endif // VULKANRENDERER_HPP
