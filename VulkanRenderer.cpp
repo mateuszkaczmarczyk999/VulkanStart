@@ -1,5 +1,11 @@
 #include "VulkanRenderer.hpp"
 
+static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
+{
+    auto app = reinterpret_cast<VulkanRenderer*>(glfwGetWindowUserPointer(window));
+    app->framebufferResized = true;
+};
+
 static std::vector<char> readFile(const std::string &fileName)
 {
     std::ifstream file(fileName, std::ios::ate | std::ios::binary);
@@ -97,10 +103,20 @@ void VulkanRenderer::run()
 void VulkanRenderer::drawFrame()
 {
     vkWaitForFences(logicalDevice, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
-    vkResetFences(logicalDevice, 1, &inFlightFences[currentFrame]);
 
     uint32_t imageIdx;
-    vkAcquireNextImageKHR(logicalDevice, swapchain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIdx);
+    VkResult nextImageResult = vkAcquireNextImageKHR(logicalDevice, swapchain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIdx);
+    if (nextImageResult == VK_ERROR_OUT_OF_DATE_KHR)
+    {
+        recreateSwapchain();
+        return;
+    }
+    else if (nextImageResult != VK_SUCCESS && nextImageResult != VK_SUBOPTIMAL_KHR)
+    {
+        throw std::runtime_error("failed to acquire swap chain image!");
+    }
+
+    vkResetFences(logicalDevice, 1, &inFlightFences[currentFrame]);
 
     vkResetCommandBuffer(commandBuffers[currentFrame], 0);
 
@@ -138,7 +154,16 @@ void VulkanRenderer::drawFrame()
     presentInfo.pImageIndices = &imageIdx;
     presentInfo.pResults = nullptr;
 
-    vkQueuePresentKHR(presentationQueue, &presentInfo);
+    VkResult result = vkQueuePresentKHR(presentationQueue, &presentInfo);
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized)
+    {
+        framebufferResized = false;
+        recreateSwapchain();
+    }
+    else if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to present swap chain image!");
+    }
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
@@ -174,32 +199,34 @@ void VulkanRenderer::createSyncObjects()
 
 void VulkanRenderer::flush()
 {
+    vkDeviceWaitIdle(logicalDevice);
+
+    cleanupSwapchain();
+
+    vkDestroyPipeline(logicalDevice, graphicsPipeline, nullptr);
+    vkDestroyPipelineLayout(logicalDevice, pipelineLayout, nullptr);
+
+    vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
+
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i ++)
     {
         vkDestroySemaphore(logicalDevice, imageAvailableSemaphores[i], nullptr);
         vkDestroySemaphore(logicalDevice, renderFinishedSemaphores[i], nullptr);
         vkDestroyFence(logicalDevice, inFlightFences[i], nullptr);
     }
+
     vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
-    for (auto framebuffer : swapchainFramebuffers)
-    {
-        vkDestroyFramebuffer(logicalDevice, framebuffer, nullptr);
-    }
-    vkDestroyPipeline(logicalDevice, graphicsPipeline, nullptr);
-    vkDestroyPipelineLayout(logicalDevice, pipelineLayout, nullptr);
-    vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
-    for (auto imageView : swapchainImageViews)
-    {
-        vkDestroyImageView(logicalDevice, imageView, nullptr);
-    }
-    vkDestroySwapchainKHR(logicalDevice, swapchain, nullptr);
+
     vkDestroyDevice(logicalDevice, nullptr);
+
     if (enableValidationLayers)
     {
         DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
     }
+
     vkDestroySurfaceKHR(instance, surface, nullptr);
     vkDestroyInstance(instance, nullptr);
+
     glfwDestroyWindow(window);
     glfwTerminate();
 }
@@ -270,8 +297,10 @@ void VulkanRenderer::createWindow()
 {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
     window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Vulkan", nullptr, nullptr);
+    glfwSetWindowUserPointer(window, this);
+    glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 }
 
 void VulkanRenderer::createInstance()
@@ -1039,4 +1068,36 @@ void VulkanRenderer::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t
     {
         throw std::runtime_error("Failed to end recording command buffer!");
     }
+}
+
+void VulkanRenderer::recreateSwapchain()
+{
+    int width = 0, height = 0;
+    glfwGetFramebufferSize(window, &width, &height);
+    while (width == 0 || height == 0)
+    {
+        glfwGetFramebufferSize(window, &width, &height);
+        glfwWaitEvents();
+    }
+
+    vkDeviceWaitIdle(logicalDevice);
+
+    cleanupSwapchain();
+
+    createSwapchain();
+    createImageViews();
+    createFramebuffers();
+}
+
+void VulkanRenderer::cleanupSwapchain()
+{
+    for (auto framebuffer : swapchainFramebuffers)
+    {
+        vkDestroyFramebuffer(logicalDevice, framebuffer, nullptr);
+    }
+    for (auto imageView : swapchainImageViews)
+    {
+        vkDestroyImageView(logicalDevice, imageView, nullptr);
+    }
+    vkDestroySwapchainKHR(logicalDevice, swapchain, nullptr);
 }

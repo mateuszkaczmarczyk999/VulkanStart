@@ -54,6 +54,7 @@ public:
     void initialize();
     void run();
     void flush();
+    bool framebufferResized = false;
 
 private:
     void createWindow();
@@ -83,6 +84,8 @@ private:
     void createSyncObjects();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIdx);
     void drawFrame();
+    void recreateSwapchain();
+    void cleanupSwapchain();
 
     GLFWwindow *window;
     VkInstance instance = VK_NULL_HANDLE;
