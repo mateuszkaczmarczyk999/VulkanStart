@@ -84,11 +84,13 @@ void VulkanRenderer::initialize()
     createSwapchain();
     createImageViews();
     createRenderPass();
+    createDescriptorSetLayout();
     createGraphicsPipeline();
     createFramebuffers();
     createCommandPool();
     createVertexBuffer();
     createIndexBuffer();
+    createUniformBuffers();
     createCommandBuffers();
     createSyncObjects();
 }
@@ -123,6 +125,8 @@ void VulkanRenderer::drawFrame()
     vkResetCommandBuffer(commandBuffers[currentFrame], 0);
 
     recordCommandBuffer(commandBuffers[currentFrame], imageIdx);
+
+    updateUniformBuffer(currentFrame);
     
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -204,6 +208,14 @@ void VulkanRenderer::flush()
     vkDeviceWaitIdle(logicalDevice);
 
     cleanupSwapchain();
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
+        vkDestroyBuffer(logicalDevice, uniformBuffers[i], nullptr);
+        vkFreeMemory(logicalDevice, uniformBuffersMemory[i], nullptr);
+    }
+
+    vkDestroyDescriptorSetLayout(logicalDevice, descriptorSetLayout, nullptr);
 
     vkDestroyBuffer(logicalDevice, indexBuffer, nullptr);
     vkFreeMemory(logicalDevice, indexBufferMemory, nullptr);
@@ -760,6 +772,28 @@ void VulkanRenderer::createImageViews()
     }
 }
 
+void VulkanRenderer::createDescriptorSetLayout()
+{
+    VkDescriptorSetLayoutBinding uboLayoutBinding{};
+    uboLayoutBinding.binding = 0;
+    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uboLayoutBinding.descriptorCount = 1;
+    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    uboLayoutBinding.pImmutableSamplers = nullptr;
+
+    VkDescriptorSetLayoutCreateInfo layoutInfo{};
+    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layoutInfo.bindingCount = 1;
+    layoutInfo.pBindings = &uboLayoutBinding;
+
+    VkResult result = vkCreateDescriptorSetLayout(logicalDevice, &layoutInfo, nullptr, &descriptorSetLayout);
+    if (result != VK_SUCCESS)
+    {
+        throw std::runtime_error("failed to create descriptor set layout!");
+    }
+
+}
+
 void VulkanRenderer::createGraphicsPipeline()
 {
     auto vertexShader = readFile("Development/cpp/VulkanStart/shaders/vert.spv");
@@ -871,8 +905,8 @@ void VulkanRenderer::createGraphicsPipeline()
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0;
-    pipelineLayoutInfo.pSetLayouts = nullptr;
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
     pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
@@ -1171,6 +1205,23 @@ void VulkanRenderer::createIndexBuffer()
     vkFreeMemory(logicalDevice, stagingBufferMemoery, nullptr);
 }
 
+void VulkanRenderer::createUniformBuffers()
+{
+    VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+
+    uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+    uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+    uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
+        VkBufferUsageFlags bufferUsage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+        VkMemoryPropertyFlags bufferProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        createBuffer(bufferSize, bufferUsage, bufferProperties, uniformBuffers[i], uniformBuffersMemory[i]);
+        vkMapMemory(logicalDevice, uniformBuffersMemory[i], 0, bufferSize, 0, &uniformBuffersMapped[i]);
+    }
+}
+
 uint32_t VulkanRenderer::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties)
 {
     VkPhysicalDeviceMemoryProperties memProperties;
@@ -1256,3 +1307,19 @@ void VulkanRenderer::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDevice
 
     vkFreeCommandBuffers(logicalDevice, commandPool, 1, &commandBuffer);
 }
+
+ void VulkanRenderer::updateUniformBuffer(uint32_t currentFrame)
+ {
+    static auto startTime = std::chrono::high_resolution_clock::now();
+    
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+    UniformBufferObject ubo{};
+    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.proj = glm::perspective(glm::radians(45.0f), (float)swapchainExtent.width / (float)swapchainExtent.height, 0.1f, 10.0f);
+    ubo.proj[1][1] *= -1;
+
+    memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
+ }

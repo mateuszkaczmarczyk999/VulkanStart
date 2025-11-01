@@ -17,6 +17,14 @@
 #include <algorithm>
 #include <fstream>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <chrono>
+
+struct UniformBufferObject {
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 proj;
+};
 
 struct Vertex {
     glm::vec2 pos;
@@ -117,6 +125,7 @@ private:
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
     void createSwapchain();
     void createImageViews();
+    void createDescriptorSetLayout();
     void createGraphicsPipeline();
     VkShaderModule createShaderModule(const std::vector<char>& code);
     void createRenderPass();
@@ -130,6 +139,8 @@ private:
     void cleanupSwapchain();
     void createVertexBuffer();
     void createIndexBuffer();
+    void createUniformBuffers();
+    void updateUniformBuffer(uint32_t currentFrame);
     uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
     void createBuffer(VkDeviceSize bufferSize, VkBufferUsageFlags bufferUsage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemoery);
@@ -149,13 +160,19 @@ private:
     std::vector<VkImage> swapchainImages;
     std::vector<VkImageView> swapchainImageViews;
     VkRenderPass renderPass;
+    VkDescriptorSetLayout descriptorSetLayout;
     VkPipelineLayout pipelineLayout;
     VkPipeline graphicsPipeline;
     std::vector<VkFramebuffer> swapchainFramebuffers;
+
     VkBuffer vertexBuffer;
     VkDeviceMemory vertexBufferMemory;
     VkBuffer indexBuffer;
     VkDeviceMemory indexBufferMemory;
+    std::vector<VkBuffer> uniformBuffers;
+    std::vector<VkDeviceMemory> uniformBuffersMemory;
+    std::vector<void*> uniformBuffersMapped;
+    
     VkCommandPool commandPool;
 
     // each frane in flight has its own command buffer, semaphores and fence
